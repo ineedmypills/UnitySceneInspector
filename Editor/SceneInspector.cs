@@ -24,7 +24,7 @@ namespace ineedmypills.SceneInspector.Editor
 
         private static void OnUpdate()
         {
-            var toolbars = Resources.FindObjectsOfTypeAll(typeof(Editor).Assembly.GetType("UnityEditor.Toolbar"));
+            var toolbars = Resources.FindObjectsOfTypeAll(typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.Toolbar"));
             var toolbar = toolbars.Length > 0 ? (ScriptableObject)toolbars[0] : null;
 
             if (toolbar == null) return;
@@ -90,13 +90,13 @@ namespace ineedmypills.SceneInspector.Editor
 
 #if !UNITY_2021_1_OR_NEWER
         private const BindingFlags FLAGS = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
-        private static readonly Assembly s_assembly = typeof(Editor).Assembly;
+        private static readonly Assembly s_assembly = typeof(UnityEditor.Editor).Assembly;
         private static readonly Type s_toolbarType = s_assembly.GetType("UnityEditor.Toolbar");
         private static readonly FieldInfo s_imguiContainerOnGui = typeof(IMGUIContainer).GetField("m_OnGUIHandler", FLAGS);
         private static ScriptableObject s_currentToolbar;
 
 #if UNITY_2020_1_OR_NEWER
-        private static readonly Type s_iWindowBackendType = typeof(Editor).Assembly.GetType("UnityEditor.IWindowBackend");
+        private static readonly Type s_iWindowBackendType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.IWindowBackend");
         private static readonly PropertyInfo s_windowBackend = s_assembly.GetType("UnityEditor.GUIView").GetProperty("windowBackend", FLAGS);
         private static readonly PropertyInfo s_viewVisualTree = s_iWindowBackendType.GetProperty("visualTree", FLAGS);
 #else
@@ -302,10 +302,10 @@ namespace ineedmypills.SceneInspector.Editor
         
         internal static void RepaintToolbar()
         {
-            var toolbars = Resources.FindObjectsOfTypeAll(typeof(Editor).Assembly.GetType("UnityEditor.Toolbar"));
+            var toolbars = Resources.FindObjectsOfTypeAll(typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.Toolbar"));
             if (toolbars.Length > 0)
             {
-                Editor.CreateEditor(toolbars[0]).Repaint();
+                UnityEditor.Editor.CreateEditor(toolbars[0]).Repaint();
             }
         }
 
