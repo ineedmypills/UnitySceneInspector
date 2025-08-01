@@ -1,21 +1,24 @@
 {
-  "name": "com.daancode.scene-inspector",
-  "version": "1.1.1",
+  "name": "com.ineedmypills.scene-inspector",
+  "version": "1.2.0",
   "displayName": "Scene Inspector",
-  "description": "Helper package which extends default toolbar with scene utilities.\n\nThis tool allows you to switch fast between scenes in your project, play first scene even if isn't active and pin selected scenes to toolbar.",
-  "unity": "2018.1",
+  "description": "An enhanced fork of the Scene Inspector utility that extends the Unity toolbar. Provides quick scene switching, additive loading, shortcuts, and the ability to play from the first build scene. Updated for modern Unity versions (2021+).",
+  "unity": "2021.3",
+  "license": "MIT",
   "keywords": [
     "scene",
     "inspector",
-    "daancode",
-    "scene-inspector",
-    "unity",
+    "toolbar",
+    "utility",
+    "editor",
+    "shortcuts",
     "scenes",
-    "shortcuts"
+    "unity",
+    "ineedmypills"
   ],
   "author": {
-    "name": "Damian Barczynski",
-    "email": "kontakt.daan@gmail.com",
-    "url": "https://github.com/daancode"
+    "name": "ineedmypills",
+    "email": "egor.glukhikh06@gmail.com",
+    "url": "https://github.com/ineedmypills"
   }
 }
