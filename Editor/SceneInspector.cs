@@ -1,28 +1,3 @@
-//  MIT License
-
-//  Copyright(c) 2021 Damian Barczynski
-//  Copyright(c) 2025 ineedmypills (fork)
-
-//  Permission is hereby granted, free of charge, to any person obtaining a copy
-//  of this software and associated documentation files (the "Software"), to deal
-//  in the Software without restriction, including without limitation the rights
-//  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-//  copies of the Software, and to permit persons to whom the Software is
-//  furnished to do so, subject to the following conditions:
-
-//  The above copyright notice and this permission notice shall be included in all
-//  copies or substantial portions of the Software.
-
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-//  SOFTWARE.
-
-// Forked from: https://github.com/daancode/unity-scene-inspector
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -52,10 +27,7 @@ namespace ineedmypills.SceneInspector.Editor
             var toolbars = Resources.FindObjectsOfTypeAll(typeof(Editor).Assembly.GetType("UnityEditor.Toolbar"));
             var toolbar = toolbars.Length > 0 ? (ScriptableObject)toolbars[0] : null;
 
-            if (toolbar == null)
-            {
-                return;
-            }
+            if (toolbar == null) return;
 
 #if UNITY_2021_1_OR_NEWER
             var root = toolbar.GetType().GetField("m_Root", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(toolbar) as VisualElement;
@@ -64,8 +36,6 @@ namespace ineedmypills.SceneInspector.Editor
             var leftZone = root.Q("ToolbarZoneLeftAlign");
             if (leftZone != null && leftZone.Q("SceneInspectorLeftContainer") == null)
             {
-                // For modern Unity, we can't position elements relative to the play buttons.
-                // We place GUI containers in the left and right zones and dynamically decide what to draw in them.
                 var leftContainer = new IMGUIContainer(DrawLeftZoneGUI)
                 {
                     name = "SceneInspectorLeftContainer",
@@ -107,7 +77,6 @@ namespace ineedmypills.SceneInspector.Editor
         {
             var settings = SceneInspector.CurrentSettings;
             var mainButtonsOnLeft = settings.mainButtonsPosition == SceneInspector.ToolbarPosition.Left;
-            
             DrawToolbar(mainButtonsOnLeft ? LeftToolbarGUI : RightToolbarGUI);
         }
         
@@ -115,85 +84,80 @@ namespace ineedmypills.SceneInspector.Editor
         {
             var settings = SceneInspector.CurrentSettings;
             var mainButtonsOnLeft = settings.mainButtonsPosition == SceneInspector.ToolbarPosition.Left;
-            
             DrawToolbar(mainButtonsOnLeft ? RightToolbarGUI : LeftToolbarGUI);
         }
 #endif
 
 #if !UNITY_2021_1_OR_NEWER
         private const BindingFlags FLAGS = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
-        private static readonly Assembly m_assembly = typeof(Editor).Assembly;
-        private static readonly Type m_toolbarType = m_assembly.GetType("UnityEditor.Toolbar");
-        private static readonly FieldInfo m_imguiContainerOnGui = typeof(IMGUIContainer).GetField("m_OnGUIHandler", FLAGS);
-        private static ScriptableObject m_currentToolbar;
+        private static readonly Assembly s_assembly = typeof(Editor).Assembly;
+        private static readonly Type s_toolbarType = s_assembly.GetType("UnityEditor.Toolbar");
+        private static readonly FieldInfo s_imguiContainerOnGui = typeof(IMGUIContainer).GetField("m_OnGUIHandler", FLAGS);
+        private static ScriptableObject s_currentToolbar;
 
 #if UNITY_2020_1_OR_NEWER
-        private static readonly Type m_iWindowBackendType = typeof(Editor).Assembly.GetType("UnityEditor.IWindowBackend");
-        private static readonly PropertyInfo m_windowBackend = m_assembly.GetType("UnityEditor.GUIView").GetProperty("windowBackend", FLAGS);
-        private static readonly PropertyInfo m_viewVisualTree = m_iWindowBackendType.GetProperty("visualTree", FLAGS);
+        private static readonly Type s_iWindowBackendType = typeof(Editor).Assembly.GetType("UnityEditor.IWindowBackend");
+        private static readonly PropertyInfo s_windowBackend = s_assembly.GetType("UnityEditor.GUIView").GetProperty("windowBackend", FLAGS);
+        private static readonly PropertyInfo s_viewVisualTree = s_iWindowBackendType.GetProperty("visualTree", FLAGS);
 #else
-        private static readonly PropertyInfo m_viewVisualTree = m_assembly.GetType("UnityEditor.GUIView").GetProperty("visualTree", FLAGS);
+        private static readonly PropertyInfo s_viewVisualTree = s_assembly.GetType("UnityEditor.GUIView").GetProperty("visualTree", FLAGS);
 #endif
 
-        private static GUIStyle m_commandStyle = null;
+        private static GUIStyle s_commandStyle = null;
 
         private static void InitializeOldToolbar(ScriptableObject toolbar)
         {
-            m_currentToolbar = toolbar;
+            s_currentToolbar = toolbar;
 #if UNITY_2020_1_OR_NEWER
-            var windowBackend = m_windowBackend.GetValue(m_currentToolbar);
-            var visualTree = (VisualElement)m_viewVisualTree.GetValue(windowBackend, null);
+            var windowBackend = s_windowBackend.GetValue(s_currentToolbar);
+            var visualTree = (VisualElement)s_viewVisualTree.GetValue(windowBackend, null);
 #else
-            var visualTree = (VisualElement)m_viewVisualTree.GetValue(m_currentToolbar, null);
+            var visualTree = (VisualElement)s_viewVisualTree.GetValue(s_currentToolbar, null);
 #endif
             var container = visualTree[0] as IMGUIContainer;
             if (container == null) return;
             
-            var handler = m_imguiContainerOnGui.GetValue(container) as Action;
+            var handler = s_imguiContainerOnGui.GetValue(container) as Action;
             handler -= OnGUI;
             handler += OnGUI;
-            m_imguiContainerOnGui.SetValue(container, handler);
+            s_imguiContainerOnGui.SetValue(container, handler);
             
             EditorApplication.update -= OnUpdate;
         }
 
         private static void OnGUI()
         {
-            if (m_commandStyle == null)
+            if (s_commandStyle == null)
             {
-                m_commandStyle = new GUIStyle("Command");
+                s_commandStyle = new GUIStyle("Command");
             }
 
             var screenWidth = EditorGUIUtility.currentViewWidth;
             var settings = SceneInspector.CurrentSettings;
 
 #if UNITY_2019_1_OR_NEWER
-            var playButtonsPosition = (screenWidth - 140) / 2;
             const float playButtonsWidth = 140f;
 #else
-            var playButtonsPosition = (screenWidth - 100) / 2;
             const float playButtonsWidth = 100f;
 #endif
+            var playButtonsPosition = (screenWidth - playButtonsWidth) / 2;
             
             var mainButtonsWidth = SceneInspector.GetMainButtonsWidth();
-            const float leftToolsWidth = 80f;    // Approximate width of transform tools. Brittle.
-            const float rightCollabWidth = 300f; // Approximate width of Collab/Services buttons. Brittle.
+            const float leftToolsWidth = 80f;
+            const float rightCollabWidth = 300f;
             const float gap = 5f;
-
-            Rect mainButtonsRect;
-            Rect shortcutsRect;
 
             if (settings.mainButtonsPosition == SceneInspector.ToolbarPosition.Right)
             {
-                shortcutsRect = new Rect(leftToolsWidth + gap, 2, screenWidth - (leftToolsWidth + gap) - rightCollabWidth - mainButtonsWidth - gap, 19);
-                mainButtonsRect = new Rect(screenWidth - rightCollabWidth - mainButtonsWidth, 2, mainButtonsWidth, 19);
+                var shortcutsRect = new Rect(leftToolsWidth + gap, 2, screenWidth - (leftToolsWidth + gap) - rightCollabWidth - mainButtonsWidth - gap, 19);
+                var mainButtonsRect = new Rect(screenWidth - rightCollabWidth - mainButtonsWidth, 2, mainButtonsWidth, 19);
                 HandleCustomToolbar(RightToolbarGUI, shortcutsRect);
                 HandleCustomToolbar(LeftToolbarGUI, mainButtonsRect);
             }
-            else // Position.Left is the default
+            else
             {
-                mainButtonsRect = new Rect(leftToolsWidth + gap, 2, mainButtonsWidth, 19);
-                shortcutsRect = new Rect(playButtonsPosition + playButtonsWidth + gap, 2, screenWidth - (playButtonsPosition + playButtonsWidth + gap) - rightCollabWidth, 19);
+                var mainButtonsRect = new Rect(leftToolsWidth + gap, 2, mainButtonsWidth, 19);
+                var shortcutsRect = new Rect(playButtonsPosition + playButtonsWidth + gap, 2, screenWidth - (playButtonsPosition + playButtonsWidth + gap) - rightCollabWidth, 19);
                 HandleCustomToolbar(LeftToolbarGUI, mainButtonsRect);
                 HandleCustomToolbar(RightToolbarGUI, shortcutsRect);
             }
@@ -201,10 +165,7 @@ namespace ineedmypills.SceneInspector.Editor
 
         private static void HandleCustomToolbar(IEnumerable<Action> toolbar, Rect rect)
         {
-            if (!(rect.width > 0))
-            {
-                return;
-            }
+            if (rect.width <= 0) return;
 
             using (new GUILayout.AreaScope(rect))
             {
@@ -217,11 +178,7 @@ namespace ineedmypills.SceneInspector.Editor
     [InitializeOnLoad]
     public class SceneInspector
     {
-        public enum ToolbarPosition
-        {
-            Left,
-            Right
-        }
+        public enum ToolbarPosition { Left, Right }
 
         [Serializable]
         public class Settings
@@ -244,13 +201,7 @@ namespace ineedmypills.SceneInspector.Editor
             public void Save()
             {
                 EditorPrefs.SetString(Key, EditorJsonUtility.ToJson(this, true));
-                // Force a repaint of the toolbar to reflect position changes
-                var toolbars = Resources.FindObjectsOfTypeAll(typeof(Editor).Assembly.GetType("UnityEditor.Toolbar"));
-                if (toolbars.Length > 0)
-                {
-                    // This is a bit of a hack, but it's a reliable way to force the toolbar to repaint.
-                    Editor.CreateEditor(toolbars[0]).Repaint();
-                }
+                SceneInspector.RepaintToolbar();
             }
 
             public void Load()
@@ -265,46 +216,45 @@ namespace ineedmypills.SceneInspector.Editor
 
         private static class Styles
         {
-            private static GUIContent _playButtonContent;
-            private static GUIContent _addSceneContent;
-            private static GUIContent _settingsContent;
-            private static GUIContent _changeSceneContent;
-            private static GUIStyle _toolbarButtonStyle;
+            private static GUIContent s_playButtonContent;
+            private static GUIContent s_addSceneContent;
+            private static GUIContent s_settingsContent;
+            private static GUIContent s_changeSceneContent;
+            private static GUIStyle s_toolbarButtonStyle;
 
-            public static GUIStyle ToolbarButton => _toolbarButtonStyle ??= new GUIStyle(EditorStyles.toolbarButton)
+            public static GUIStyle ToolbarButton => s_toolbarButtonStyle ??= new GUIStyle(EditorStyles.toolbarButton)
             {
                 alignment = TextAnchor.MiddleCenter,
                 imagePosition = ImagePosition.ImageLeft
             };
 
-            public static GUIContent PlaySceneContent => _playButtonContent ??= new GUIContent
+            public static GUIContent PlaySceneContent => s_playButtonContent ??= new GUIContent
             {
                 image = EditorGUIUtility.IconContent("Animation.Play").image,
                 tooltip = "Enter play mode from first scene defined in build settings."
             };
 
-            // IMPROVEMENT: Cache the GUIContent for the scene switcher button.
-            // It's now updated only when the active scene changes, not on every GUI frame.
-            public static GUIContent ChangeSceneContent => _changeSceneContent;
+            public static GUIContent ChangeSceneContent => s_changeSceneContent;
 
-            public static GUIContent AddSceneContent => _addSceneContent ??= new GUIContent
+            public static GUIContent AddSceneContent => s_addSceneContent ??= new GUIContent
             {
                 image = EditorGUIUtility.IconContent("Toolbar Plus").image,
                 tooltip = "Open scene in additive mode"
             };
 
-            public static GUIContent SettingsContent => _settingsContent ??= new GUIContent
+            public static GUIContent SettingsContent => s_settingsContent ??= new GUIContent
             {
                 image = EditorGUIUtility.IconContent("d_Settings").image,
                 tooltip = "Scene inspector settings"
             };
             
-            /// <summary>
-            /// Updates the cached GUIContent for the scene switcher button with the current active scene name.
-            /// </summary>
+            public static readonly Color ActiveShortcutColor = Color.cyan;
+            public static readonly Color PlayModeEnabledColor = Color.green;
+            public static readonly Color PlayModeDisabledColor = Color.red;
+
             public static void UpdateChangeSceneContent()
             {
-                _changeSceneContent = new GUIContent
+                s_changeSceneContent = new GUIContent
                 {
                     text = SceneManager.GetActiveScene().name,
                     image = EditorGUIUtility.IconContent("d_SceneAsset Icon").image,
@@ -313,16 +263,11 @@ namespace ineedmypills.SceneInspector.Editor
             }
         }
 
-        private static Settings _sSettings;
-        // IMPROVEMENT: Simplified lazy initialization.
-        internal static Settings CurrentSettings => _sSettings ??= new Settings();
+        private static Settings s_settings;
+        internal static Settings CurrentSettings => s_settings ??= new Settings();
 
-        // IMPROVEMENT: Replaced magic number with a named constant for clarity.
         private const float MainButtonsHorizontalPadding = 15f;
 
-        /// <summary>
-        /// Calculates the total width of the main toolbar buttons. Used for legacy toolbar layout.
-        /// </summary>
         internal static float GetMainButtonsWidth()
         {
             float width = 0;
@@ -345,16 +290,18 @@ namespace ineedmypills.SceneInspector.Editor
             ToolbarExtender.LeftToolbarGUI.Add(OnToolbarGUI);
             ToolbarExtender.RightToolbarGUI.Add(OnShortcutsGUI);
             EditorApplication.playModeStateChanged += OnModeChanged;
-            
-            // IMPROVEMENT: Subscribe to scene changes to update the UI accordingly.
             EditorSceneManager.activeSceneChangedInEditMode += OnActiveSceneChanged;
-            // Initialize the scene name on load.
             Styles.UpdateChangeSceneContent();
         }
 
         private static void OnActiveSceneChanged(Scene from, Scene to)
         {
             Styles.UpdateChangeSceneContent();
+            RepaintToolbar();
+        }
+        
+        internal static void RepaintToolbar()
+        {
             var toolbars = Resources.FindObjectsOfTypeAll(typeof(Editor).Assembly.GetType("UnityEditor.Toolbar"));
             if (toolbars.Length > 0)
             {
@@ -366,10 +313,7 @@ namespace ineedmypills.SceneInspector.Editor
         {
             CurrentSettings.Load();
 
-            if (!CurrentSettings.restoreAfterPlay || string.IsNullOrEmpty(CurrentSettings.lastOpenedScene))
-            {
-                return;
-            }
+            if (!CurrentSettings.restoreAfterPlay || string.IsNullOrEmpty(CurrentSettings.lastOpenedScene)) return;
 
             if (playModeState == PlayModeStateChange.EnteredEditMode)
             {
@@ -401,10 +345,7 @@ namespace ineedmypills.SceneInspector.Editor
 
         private static void OnShortcutsGUI()
         {
-            if (EditorApplication.isPlaying || !CurrentSettings.ShortcutsValid)
-            {
-                return;
-            }
+            if (EditorApplication.isPlaying || !CurrentSettings.ShortcutsValid) return;
 
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -417,7 +358,7 @@ namespace ineedmypills.SceneInspector.Editor
                     var originalContentColor = GUI.contentColor;
                     if (isActiveScene)
                     {
-                        GUI.contentColor = Color.cyan;
+                        GUI.contentColor = Styles.ActiveShortcutColor;
                     }
 
                     using (new EditorGUI.DisabledScope(isActiveScene))
@@ -468,7 +409,7 @@ namespace ineedmypills.SceneInspector.Editor
         private static void CreatePlayButton()
         {
             var originalContentColor = GUI.contentColor;
-            GUI.contentColor = EditorApplication.isPlaying ? Color.red : Color.green;
+            GUI.contentColor = EditorApplication.isPlaying ? Styles.PlayModeDisabledColor : Styles.PlayModeEnabledColor;
 
             using (new EditorGUI.DisabledScope(EditorBuildSettings.scenes.Length == 0))
             {
@@ -520,15 +461,13 @@ namespace ineedmypills.SceneInspector.Editor
                 return EditorBuildSettings.scenes.Select(s => s.path).ToArray();
             }
 
-            var sceneGuids = AssetDatabase.FindAssets("t:Scene");
+            var sceneGuids = AssetDatabase.FindAssets("t:Scene", new[] { "Assets", "Packages" });
             if (sceneGuids == null || sceneGuids.Length == 0)
             {
                 return Array.Empty<string>();
             }
             return sceneGuids.Select(AssetDatabase.GUIDToAssetPath).ToArray();
         }
-
-        // --- REFACTORING: Broke down the large CreateSettingsButton into smaller, focused methods ---
 
         private static void CreateSettingsButton()
         {
@@ -607,16 +546,15 @@ namespace ineedmypills.SceneInspector.Editor
 
         private static void AddShortcutsMenuItems(GenericMenu menu)
         {
-            if (CurrentSettings.enableShortcuts)
+            if (!CurrentSettings.enableShortcuts) return;
+            
+            FetchShortcutScenes(menu);
+            menu.AddSeparator("Shortcuts/");
+            menu.AddItem(new GUIContent("Shortcuts/Clear"), false, () =>
             {
-                FetchShortcutScenes(menu);
-                menu.AddSeparator("Shortcuts/");
-                menu.AddItem(new GUIContent("Shortcuts/Clear"), false, () =>
-                {
-                    CurrentSettings.shortcuts.Clear();
-                    CurrentSettings.Save();
-                });
-            }
+                CurrentSettings.shortcuts.Clear();
+                CurrentSettings.Save();
+            });
         }
 
         private static void AddCreateSceneMenuItems(GenericMenu menu)
@@ -672,9 +610,6 @@ namespace ineedmypills.SceneInspector.Editor
             return System.IO.Path.GetFileNameWithoutExtension(path);
         }
 
-        private static bool IsActiveScene(string scenePath)
-        {
-            return scenePath == SceneManager.GetActiveScene().path;
-        }
+        private static bool IsActiveScene(string scenePath) => scenePath == SceneManager.GetActiveScene().path;
     }
 }
