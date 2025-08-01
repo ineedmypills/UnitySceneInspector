@@ -1,6 +1,6 @@
 ﻿{
-    "name": "ineedmypills.SceneInspector.Editor",
-    "rootNamespace": "ineedmypills.SceneInspector.Editor",
+    "name": "Unity.ineedmypills.SceneInspector.Editor",
+    "rootNamespace": "Unity.ineedmypills.SceneInspector.Editor",
     "references": [],
     "includePlatforms": [
         "Editor"
