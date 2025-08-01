@@ -33,7 +33,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
-namespace Ineedmypills.Utils
+namespace ineedmypills.SceneInspector.Editor
 {
     [InitializeOnLoad]
     public static class ToolbarExtender
